@@ -104,6 +104,7 @@ function openBanned() {
 }
 // ---- Задания (обновляются каждые сутки) ----
 const TASKS = [
+  { id: 't_channel', title: 'Подписаться на канал Ronaldo', sub: 'Вступи в канал', emoji: '📢', reward: 5000, kind: 'channel' },
   { id: 't_daily',   title: 'Ежедневный бонус',  sub: 'Заходи каждый день',   emoji: '📅', reward: 1000, kind: 'daily' },
   { id: 't_taps',    title: 'Сделать 500 тапов', sub: 'Натапай за сегодня',   emoji: '👆', reward: 2000, kind: 'goal', goal: 500 },
   { id: 't_upgrade', title: 'Прокачать карточку',sub: 'Купи любой апгрейд',   emoji: '📈', reward: 3000, kind: 'upgrade' },
@@ -126,6 +127,9 @@ const DEFAULT_STATE = {
   refCount: 0,
   tutorialDone: false,
   firstSeen: 0,
+  xp: 0,
+  bpClaimed: {},
+  bpChampion: false,
   boostUntil: 0,
   boostCdUntil: 0,
   lastSeen: Date.now(),
@@ -240,7 +244,6 @@ function render() {
 // ===== Тап =====
 function doTap(clientX, clientY) {
   if (isBanned) return;
-  if (!state.subscribed) { openGate(); return; }
   const cost = 1;
   if (state.energy < cost) { toast('⚡ Энергия кончилась!'); return; }
   const gain = tapValue();
@@ -248,6 +251,7 @@ function doTap(clientX, clientY) {
   state.balance += gain;
   state.totalEarned += gain;
   state.tapsToday = (state.tapsToday || 0) + 1;
+  state.xp = (state.xp || 0) + 1;
   haptic('light');
   floatNumber(clientX, clientY, '+' + gain);
   render();
@@ -340,6 +344,7 @@ function openTab(tab) {
   if (tab === 'cards') renderCards();
   else if (tab === 'profile') renderProfile();
   else if (tab === 'earn') renderEarn();
+  else if (tab === 'bp') renderBP();
   openSheet();
 }
 function renderCards() {
@@ -430,15 +435,6 @@ function renderProfile() {
 }
 function renderEarn() {
   let html = `<h2>✅ Задания</h2><p class="subtitle">Обновляются каждые сутки</p>`;
-  html += `
-    <div class="list-item">
-      <span class="li-emoji">📢</span>
-      <div class="li-text">
-        <div class="li-title">Подписаться на канал Ronaldo</div>
-        <div class="li-sub">Ты подписан ✓</div>
-      </div>
-      <button class="li-action done" disabled>✓ Готово</button>
-    </div>`;
   TASKS.forEach((t) => {
     const done = state.tasksDone[t.id];
     let sub = t.sub, disabled = '';
@@ -467,6 +463,7 @@ function renderEarn() {
 function completeTask(id) {
   if (state.tasksDone[id]) return;
   const t = TASKS.find((x) => x.id === id);
+  if (t.kind === 'channel') openTg(CHANNEL_URL);
   if (t.kind === 'goal' && (state.tapsToday || 0) < t.goal) {
     toast(`Натапай ещё ${t.goal - (state.tapsToday || 0)}`); return;
   }
@@ -476,6 +473,7 @@ function completeTask(id) {
   state.tasksDone[id] = true;
   state.balance += t.reward;
   state.totalEarned += t.reward;
+  state.xp = (state.xp || 0) + (t.xp || 150);
   haptic('medium');
   toast(`+${fmt(t.reward)} за задание!`);
   render();
@@ -559,6 +557,52 @@ function renderTutorial() {
     else { tutStep++; renderTutorial(); }
   });
 }
+// ===== Battle Pass (World Cup) =====
+function bpThresholds(){
+  var arr=[],sum=0;
+  for(var l=1;l<=50;l++){
+    var c = l<=10?300 : l<=20?500 : l<=30?750 : l<=40?1000 : l<=49?1250 : 2000;
+    sum+=c; arr.push(sum);
+  }
+  return arr;
+}
+var BP = bpThresholds();
+function bpLevel(){ var lv=0; for(var i=0;i<BP.length;i++){ if((state.xp||0)>=BP[i]) lv=i+1; } return lv; }
+function bpReward(l){ return l>=50 ? 200000 : l*2000; }
+function renderBP(){
+  var xp=state.xp||0, lv=bpLevel();
+  var prevNeed = lv>0 ? BP[lv-1] : 0;
+  var nextNeed = lv<50 ? BP[lv] : BP[49];
+  var span = lv<50 ? (nextNeed-prevNeed) : 1;
+  var cur = lv<50 ? (xp-prevNeed) : 1;
+  var pct = Math.min(100, cur/span*100);
+  var html = '<h2>🏆 Battle Pass</h2><p class="subtitle">World Cup · сезон 30 дней · бесплатно</p>';
+  html += '<div class="bp-top"><span>Уровень '+lv+'/50</span><span>'+fmt(xp)+' XP</span></div>';
+  html += '<div class="bp-bar"><i style="width:'+pct+'%"></i></div>';
+  html += '<div class="bp-next">'+(lv<50?('До ур. '+(lv+1)+': '+fmt(Math.max(0,nextNeed-xp))+' XP'):'Battle Pass завершён! 🏆')+'</div>';
+  html += '<div class="bp-track">';
+  for(var l=1;l<=50;l++){
+    var reached = xp>=BP[l-1];
+    var claimed = state.bpClaimed[l];
+    var fin = l===50;
+    html += '<div class="bp-lvl '+(reached?'on':'')+(fin?' final':'')+'">'+
+      '<div class="bp-n">'+(fin?'🏆':l)+'</div>'+
+      '<div class="bp-rw">'+(fin?'CR7 World Cup':('+'+fmt(bpReward(l))))+'</div>'+
+      '<button data-bp="'+l+'" '+(reached&&!claimed?'':'disabled')+' class="'+(claimed?'done':'')+'">'+(claimed?'✓':'Забрать')+'</button>'+
+      '</div>';
+  }
+  html += '</div>';
+  sheetBody.innerHTML = html;
+  sheetBody.querySelectorAll('[data-bp]').forEach(function(b){ b.onclick=function(){ claimBp(+b.dataset.bp); }; });
+}
+function claimBp(l){
+  if(state.bpClaimed[l] || (state.xp||0) < BP[l-1]) return;
+  state.bpClaimed[l]=true;
+  var r=bpReward(l); state.balance+=r; state.totalEarned+=r;
+  if(l===50){ state.bpChampion=true; var im=$('#catImg'); if(im) im.classList.add('champion'); toast('🏆 Роналду WORLD CUP разблокирован!'); }
+  else toast('+'+fmt(r)+' за уровень '+l);
+  haptic('medium'); render(); renderBP(); save();
+}
 // ===== Тосты =====
 let toastTimer;
 function toast(msg) {
@@ -593,14 +637,11 @@ async function init() {
   checkDailyReset();
   await syncServer();
   if (isBanned) { render(); openBanned(); return; }
-  const sub = await verifySubscription();
-  if (sub === true) state.subscribed = true;
-  else if (sub === false) state.subscribed = false;
   await claimReferrals();
   render();
   updateBoostUI();
-  if (!state.subscribed) openGate();
-  else if (!state.tutorialDone) openTutorial();
+  if (state.bpChampion) { var im=$('#catImg'); if(im) im.classList.add('champion'); }
+  if (!state.tutorialDone) openTutorial();
   startLoops();
   save();
 }
