@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CR7 Coin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0a0a12; --bg2:#12121f; --card:#1a1a2b; --bd:#262640;
+    --gold:#f5b301; --gold2:#ffd24a; --txt:#fff; --muted:#9aa0b5;
+    --grad-gold:linear-gradient(135deg,#ffd24a,#f5b301);
+    --green:#34d399; --red:#f87171;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{height:100%}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden}
+  #app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;
+    background:radial-gradient(700px 380px at 50% -5%,rgba(245,179,1,.18),transparent 60%),var(--bg)}
+
+  /* top bar */
+  .top{padding:14px 16px 6px;display:flex;gap:10px;align-items:center}
+  .rank{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:8px 12px}
+  .rank .r1{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+  .bar{height:6px;background:#0c0c18;border-radius:99px;margin-top:6px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:var(--grad-gold);border-radius:99px;transition:width .3s}
+  .perhour{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:8px 12px;text-align:right;min-width:96px}
+  .perhour .l{font-size:10px;color:var(--muted)}
+  .perhour .v{font-size:13px;font-weight:800;color:var(--gold2)}
+
+  /* balance */
+  .bal{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0 2px;font-size:40px;font-weight:900}
+  .bal .coin{font-size:34px}
+
+  /* tap area */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+  .char{width:250px;height:250px;border-radius:50%;cursor:pointer;position:relative;
+    background:radial-gradient(circle at 50% 35%,#2a2a44,#12121f);
+    border:3px solid var(--bd);box-shadow:0 0 60px rgba(245,179,1,.25),inset 0 0 0 6px rgba(255,255,255,.03);
+    display:grid;place-items:center;overflow:hidden;transition:transform .07s}
+  .char.tap{transform:scale(.94)}
+  .char img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+  #charFallback{display:none;font-size:120px}
+  .float{position:absolute;font-weight:900;font-size:30px;color:var(--gold2);pointer-events:none;animation:up 1s ease-out forwards;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  @keyframes up{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-90px) scale(1.3)}}
+
+  /* energy + boost */
+  .ebar{padding:0 16px 6px;display:flex;align-items:center;justify-content:space-between}
+  .energy{display:flex;align-items:center;gap:6px;font-weight:800}
+  .energy .lt{color:var(--gold)}
+  .boost{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:9px 14px;font-weight:700;cursor:pointer}
+  .boost:active{transform:scale(.96)}
+  .boost.off{opacity:.45}
+
+  /* nav */
+  nav{display:flex;background:var(--bg2);border-top:1px solid var(--bd);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  nav button{flex:1;background:none;border:none;color:var(--muted);padding:8px 4px;border-radius:12px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-weight:600}
+  nav button .ic{font-size:20px}
+  nav button.active{color:var(--gold2);background:rgba(245,179,1,.08)}
+
+  /* panels */
+  .panel{position:absolute;inset:0;bottom:64px;top:0;background:var(--bg);overflow-y:auto;padding:18px 16px 20px;display:none}
+  .panel.show{display:block}
+  .panel h2{font-size:20px;margin-bottom:4px}
+  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+  .item .ic{width:46px;height:46px;border-radius:12px;background:#0e0e1a;display:grid;place-items:center;font-size:24px;flex:none}
+  .item .nm{font-weight:700;font-size:15px}
+  .item .ds{font-size:12px;color:var(--muted);margin-top:2px}
+  .item .act{margin-left:auto;text-align:right}
+  .item .cost{font-weight:800;color:var(--gold2);font-size:14px;white-space:nowrap}
+  .item button{margin-top:6px;background:var(--grad-gold);border:none;color:#1a1300;font-weight:800;padding:7px 14px;border-radius:10px;font-size:13px;cursor:pointer}
+  .item button:disabled{opacity:.4;cursor:not-allowed}
+  .item button.done{background:#26331f;color:var(--green)}
+  /* profile */
+  .pstat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .pstat .b{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+  .pstat .b .l{font-size:12px;color:var(--muted)}
+  .pstat .b .v{font-size:20px;font-weight:800;margin-top:2px}
+  .wbtn{width:100%;padding:13px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--txt);font-weight:700;margin-top:10px;cursor:pointer}
+  .wbtn.gold{background:var(--grad-gold);color:#1a1300;border:none}
+  .wbtn.red{color:var(--red)}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#1a1a2b;border:1px solid var(--bd);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;transition:opacity .25s;z-index:99;pointer-events:none}
+  .toast.show{opacity:1}
+  .bot{text-align:center;color:var(--muted);font-size:11px;padding:2px 0 6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="rank">
+      <div class="r1"><span id="rankName">Новичок</span></div>
+      <div class="bar"><i id="rankBar"></i></div>
+    </div>
+    <div class="perhour"><div class="l">в час</div><div class="v" id="perHour">0</div></div>
+  </div>
+
+  <div class="bal"><span class="coin" id="coinIcon">🐐</span><span id="balance">0</span></div>
+
+  <div class="stage" id="stage">
+    <div class="char" id="char">
+      <img id="charImg" src="character.png" alt="">
+      <div id="charFallback">🐐</div>
+    </div>
+  </div>
+
+  <div class="ebar">
+    <div class="energy"><span class="lt">⚡</span><span id="energy">1000</span> / <span id="energyMax">1000</span></div>
+    <div class="boost" id="boost">🚀 Буст</div>
+  </div>
+
+  <div class="bot" id="botName">@cr7tap_bot</div>
+
+  <!-- panels -->
+  <div class="panel" id="p-cards">
+    <h2>Карточки</h2>
+    <div class="sub">Покупай апгрейды — они приносят монеты каждый час, даже офлайн.</div>
+    <div id="cardsList"></div>
+  </div>
+  <div class="panel" id="p-tasks">
+    <h2>Задания</h2>
+    <div class="sub">Выполняй задания и получай монеты.</div>
+    <div id="tasksList"></div>
+  </div>
+  <div class="panel" id="p-profile">
+    <h2>Профиль</h2>
+    <div class="sub">Твоя статистика.</div>
+    <div class="pstat">
+      <div class="b"><div class="l">Ранг</div><div class="v" id="pf-rank">—</div></div>
+      <div class="b"><div class="l">Всего намолочено</div><div class="v" id="pf-total">0</div></div>
+      <div class="b"><div class="l">За тап</div><div class="v" id="pf-tap">1</div></div>
+      <div class="b"><div class="l">В час</div><div class="v" id="pf-hour">0</div></div>
+    </div>
+    <button class="wbtn gold" id="inviteBtn">🤝 Пригласить друга</button>
+    <button class="wbtn" id="channelBtn">📣 Канал автора</button>
+    <button class="wbtn red" id="resetBtn">↺ Сбросить прогресс</button>
+  </div>
+
+  <nav>
+    <button class="active" data-tab="tap"><span class="ic">🪙</span>Биржа</button>
+    <button data-tab="cards"><span class="ic">🃏</span>Карточки</button>
+    <button data-tab="tasks"><span class="ic">✅</span>Задания</button>
+    <button data-tab="profile"><span class="ic">👤</span>Профиль</button>
+  </nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var C = Object.assign({}, window.GAME_CONFIG||{});
+  // Telegram WebApp
+  var TG = window.Telegram && window.Telegram.WebApp;
+  if(TG){ try{TG.ready();TG.expand();}catch(e){} }
+  function haptic(t){ try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred(t||'light');}catch(e){} }
+
+  var SK = "cr7tap_save_v1";
+  function load(){ try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return {}} }
+  function save(){ localStorage.setItem(SK, JSON.stringify(S)); }
+  var def = { bal:0, total:0, energy:C.energyMax, last:Date.now(), cards:{}, tasks:{}, boostAt:0 };
+  var S = Object.assign({}, def, load());
+  if(typeof S.energy!=="number") S.energy=C.energyMax;
+
+  // helpers
+  function fmt(n){ n=Math.floor(n);
+    if(n>=1e9) return (n/1e9).toFixed(2)+"B";
+    if(n>=1e6) return (n/1e6).toFixed(2)+"M";
+    if(n>=1e3) return (n/1e3).toFixed(2)+"K";
+    return ""+n; }
+  function cardCount(id){ return S.cards[id]||0; }
+  function cardCost(c){ return Math.floor(c.baseCost*Math.pow(c.growth, cardCount(c.id))); }
+  function perHour(){ var s=0; (C.cards||[]).forEach(function(c){ s+=c.perHour*cardCount(c.id); }); return s; }
+  function perTap(){ var s=C.perTap||1; (C.cards||[]).forEach(function(c){ s+=(c.tapAdd||0)*cardCount(c.id); }); return s; }
+  function rank(){ var r=C.ranks[0]; for(var i=0;i<C.ranks.length;i++){ if(S.bal>=C.ranks[i].min) r=C.ranks[i]; } return r; }
+  function nextRank(){ for(var i=0;i<C.ranks.length;i++){ if(S.bal<C.ranks[i].min) return C.ranks[i]; } return null; }
+
+  // DOM
+  var $=function(id){return document.getElementById(id)};
+  $("coinIcon").textContent=C.coinIcon||"🪙";
+  $("energyMax").textContent=C.energyMax;
+  $("botName").textContent=C.bot||"";
+  $("charFallback").textContent=C.coinIcon||"🐐";
+  $("charImg").onerror=function(){ this.style.display="none"; $("charFallback").style.display="block"; };
+  document.title=C.title||"Tap";
+
+  function render(){
+    $("balance").textContent=fmt(S.bal);
+    $("perHour").textContent=fmt(perHour());
+    $("energy").textContent=Math.floor(S.energy);
+    var r=rank(), nr=nextRank();
+    $("rankName").textContent=r.name;
+    var prog = nr ? Math.min(100, ((S.bal-r.min)/(nr.min-r.min))*100) : 100;
+    $("rankBar").style.width=prog+"%";
+    $("pf-rank").textContent=r.name;
+    $("pf-total").textContent=fmt(S.total);
+    $("pf-tap").textContent=fmt(perTap());
+    $("pf-hour").textContent=fmt(perHour());
+  }
+
+  // TAP
+  var char=$("char"), stage=$("stage");
+  function doTap(x,y){
+    if(S.energy<1) return;
+    var g=perTap();
+    S.bal+=g; S.total+=g; S.energy-=1;
+    char.classList.add("tap"); setTimeout(function(){char.classList.remove("tap")},70);
+    haptic('light');
+    var f=document.createElement("div"); f.className="float"; f.textContent="+"+g;
+    var rect=stage.getBoundingClientRect();
+    f.style.left=((x||rect.width/2)-14)+"px"; f.style.top=((y||rect.height/2)-20)+"px";
+    stage.appendChild(f); setTimeout(function(){f.remove()},1000);
+    render();
+  }
+  char.addEventListener('pointerdown', function(e){
+    var rect=stage.getBoundingClientRect();
+    doTap(e.clientX-rect.left, e.clientY-rect.top);
+  });
+
+  // BOOST: refill energy, cooldown
+  var boost=$("boost");
+  boost.addEventListener('click', function(){
+    var now=Date.now();
+    if(now - (S.boostAt||0) < (C.boostCooldown||60)*1000){
+      toast("Буст перезаряжается"); return;
+    }
+    S.energy=C.energyMax; S.boostAt=now; haptic('medium'); toast("⚡ Энергия восстановлена!"); render(); save(); updateBoost();
+  });
+  function updateBoost(){
+    var ready = Date.now()-(S.boostAt||0) >= (C.boostCooldown||60)*1000;
+    boost.classList.toggle("off", !ready);
+  }
+
+  // tick: energy regen + passive income
+  setInterval(function(){
+    var now=Date.now(), dt=(now-S.last)/1000; S.last=now;
+    if(S.energy<C.energyMax) S.energy=Math.min(C.energyMax, S.energy+(C.energyRegen||1)*dt);
+    var ph=perHour(); if(ph>0){ var add=ph*dt/3600; S.bal+=add; S.total+=add; }
+    updateBoost(); render();
+  },1000);
+  // offline income on load
+  (function(){ var dt=(Date.now()-S.last)/1000; if(dt>0){ var add=perHour()*Math.min(dt,86400)/3600; S.bal+=add; S.total+=add; S.energy=Math.min(C.energyMax,S.energy+(C.energyRegen||1)*dt);} S.last=Date.now(); })();
+
+  setInterval(save, 3000);
+  window.addEventListener('beforeunload', save);
+
+  // CARDS
+  function renderCards(){
+    var html="";
+    (C.cards||[]).forEach(function(c){
+      var cost=cardCost(c), lvl=cardCount(c.id), can=S.bal>=cost;
+      html+='<div class="item"><div class="ic">'+c.icon+'</div>'+
+        '<div><div class="nm">'+c.name+' <span style="color:var(--muted);font-weight:600">ур.'+lvl+'</span></div>'+
+        '<div class="ds">+'+fmt(c.perHour)+'/час'+(c.tapAdd?(' · +'+c.tapAdd+'/тап'):'')+'</div></div>'+
+        '<div class="act"><div class="cost">'+fmt(cost)+' '+(C.coinIcon||'')+'</div>'+
+        '<button data-buy="'+c.id+'" '+(can?'':'disabled')+'>Купить</button></div></div>';
+    });
+    $("cardsList").innerHTML=html;
+    $("cardsList").querySelectorAll('[data-buy]').forEach(function(b){
+      b.onclick=function(){
+        var c=(C.cards||[]).find(function(x){return x.id===b.dataset.buy});
+        var cost=cardCost(c);
+        if(S.bal<cost){toast("Не хватает монет");return;}
+        S.bal-=cost; S.cards[c.id]=cardCount(c.id)+1; haptic('medium'); toast("Куплено: "+c.name); save(); renderCards(); render();
+      };
+    });
+  }
+
+  // TASKS
+  function renderTasks(){
+    var html="";
+    (C.tasks||[]).forEach(function(t){
+      var done=!!S.tasks[t.id];
+      html+='<div class="item"><div class="ic">🎁</div>'+
+        '<div><div class="nm">'+t.title+'</div><div class="ds">+'+fmt(t.reward)+' '+(C.coinIcon||'')+'</div></div>'+
+        '<div class="act"><button data-task="'+t.id+'" class="'+(done?'done':'')+'" '+(done?'disabled':'')+'>'+(done?'✓ Готово':'Выполнить')+'</button></div></div>';
+    });
+    $("tasksList").innerHTML=html;
+    $("tasksList").querySelectorAll('[data-task]').forEach(function(b){
+      b.onclick=function(){
+        var t=(C.tasks||[]).find(function(x){return x.id===b.dataset.task});
+        if(S.tasks[t.id]) return;
+        if(t.url){ try{ TG&&TG.openTelegramLink && t.url.indexOf('t.me')>-1 ? TG.openTelegramLink(t.url) : window.open(t.url,'_blank'); }catch(e){ window.open(t.url,'_blank'); } }
+        S.tasks[t.id]=1; S.bal+=t.reward; S.total+=t.reward; haptic('medium'); toast("+"+fmt(t.reward)+" "+(C.coinIcon||'')); save(); renderTasks(); render();
+      };
+    });
+  }
+
+  // PROFILE buttons
+  $("inviteBtn").onclick=function(){
+    var txt="Залетай в "+(C.title||"тапалку")+"! "+(C.bot||"");
+    var url="https://t.me/share/url?url="+encodeURIComponent("https://t.me/"+ (C.bot||"").replace('@',''))+"&text="+encodeURIComponent(txt);
+    try{ TG&&TG.openTelegramLink ? TG.openTelegramLink(url) : window.open(url,'_blank'); }catch(e){ window.open(url,'_blank'); }
+  };
+  $("channelBtn").onclick=function(){
+    try{ TG&&TG.openTelegramLink ? TG.openTelegramLink(C.channelUrl) : window.open(C.channelUrl,'_blank'); }catch(e){ window.open(C.channelUrl,'_blank'); }
+  };
+  $("resetBtn").onclick=function(){
+    if(confirm("Сбросить весь прогресс?")){ S=Object.assign({},def,{energy:C.energyMax,last:Date.now()}); save(); renderCards(); renderTasks(); render(); toast("Прогресс сброшен"); }
+  };
+
+  // NAV
+  var panels={cards:"p-cards",tasks:"p-tasks",profile:"p-profile"};
+  document.querySelectorAll('nav button').forEach(function(b){
+    b.onclick=function(){
+      document.querySelectorAll('nav button').forEach(function(x){x.classList.remove('active')});
+      b.classList.add('active');
+      var tab=b.dataset.tab;
+      Object.values(panels).forEach(function(id){$(id).classList.remove('show')});
+      if(tab==='cards'){renderCards();$("p-cards").classList.add('show');}
+      else if(tab==='tasks'){renderTasks();$("p-tasks").classList.add('show');}
+      else if(tab==='profile'){render();$("p-profile").classList.add('show');}
+    };
+  });
+
+  // toast
+  var tEl=$("toast"), tTo;
+  function toast(m){ tEl.textContent=m; tEl.classList.add("show"); clearTimeout(tTo); tTo=setTimeout(function(){tEl.classList.remove("show")},1600); }
+
+  render();
+})();
+</script>
+</body>
+</html>

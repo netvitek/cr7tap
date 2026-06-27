@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CR7 Coin — Админка</title>
+<script src="config.js"></script>
+<style>
+  :root{--bg:#0a0a12;--card:#1a1a2b;--bd:#262640;--gold:#f5b301;--gold2:#ffd24a;--txt:#fff;--muted:#9aa0b5}
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:24px}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .note{background:#1a1505;border:1px solid #3a2e08;color:#f5d98a;font-size:12px;padding:10px 12px;border-radius:10px;margin-bottom:18px}
+  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px;font-weight:600}
+  input,textarea{width:100%;padding:11px 12px;border-radius:10px;background:var(--card);border:1px solid var(--bd);color:var(--txt);font-size:14px;font-family:inherit}
+  textarea{min-height:120px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{width:100%;margin-top:20px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffd24a,#f5b301);color:#1a1300;font-weight:800;font-size:15px;cursor:pointer}
+  .gate{max-width:340px;margin:80px auto;text-align:center}
+  #app{display:none}
+  .ok{color:#34d399;font-size:13px;margin-top:10px;text-align:center;display:none}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <h1>🔒 Админка</h1>
+  <div class="sub">Введите пароль</div>
+  <input type="password" id="pw" placeholder="пароль">
+  <button class="btn" onclick="checkPw()">Войти</button>
+</div>
+
+<div class="wrap" id="app">
+  <h1>⚙️ Настройки CR7 Coin</h1>
+  <div class="sub">Измени значения и скачай config.js — затем залей его в репозиторий (заменит старый).</div>
+  <div class="note">⚠️ Это статическая «админка»: чтобы изменения увидели все игроки, нужно скачать config.js и закоммитить его в репозиторий GitHub (сайт пересоберётся сам). Управлять балансом конкретных игроков отсюда нельзя — для этого нужен бэкенд.</div>
+
+  <div class="row">
+    <div><label>Название игры</label><input id="title"></div>
+    <div><label>Монета (название)</label><input id="coin"></div>
+  </div>
+  <div class="row">
+    <div><label>Иконка монеты (эмодзи)</label><input id="coinIcon"></div>
+    <div><label>Файл персонажа</label><input id="character"></div>
+  </div>
+  <div class="row">
+    <div><label>Бот (@username)</label><input id="bot"></div>
+    <div><label>Ссылка на канал</label><input id="channelUrl"></div>
+  </div>
+  <div class="row">
+    <div><label>Монет за тап</label><input id="perTap" type="number"></div>
+    <div><label>Макс энергии</label><input id="energyMax" type="number"></div>
+  </div>
+  <div class="row">
+    <div><label>Реген энергии (/сек)</label><input id="energyRegen" type="number"></div>
+    <div><label>Перезарядка буста (сек)</label><input id="boostCooldown" type="number"></div>
+  </div>
+
+  <label>Карточки (JSON)</label>
+  <textarea id="cards"></textarea>
+  <label>Задания (JSON)</label>
+  <textarea id="tasks"></textarea>
+  <label>Ранги (JSON)</label>
+  <textarea id="ranks"></textarea>
+
+  <button class="btn" onclick="download()">💾 Скачать config.js</button>
+  <div class="ok" id="ok">Готово! Залей этот config.js в репозиторий вместо старого.</div>
+</div>
+
+<script>
+  var C = window.GAME_CONFIG || {};
+  function checkPw(){
+    // ВНИМАНИЕ: клиентский пароль, не настоящая защита. Поменяй значение ниже.
+    if(document.getElementById('pw').value === "cr7admin"){
+      document.getElementById('gate').style.display='none';
+      document.getElementById('app').style.display='block';
+      fill();
+    } else { alert("Неверный пароль"); }
+  }
+  var $=function(id){return document.getElementById(id)};
+  function fill(){
+    ["title","coin","coinIcon","character","bot","channelUrl","perTap","energyMax","energyRegen","boostCooldown"].forEach(function(k){ if($(k)) $(k).value = C[k]!=null?C[k]:""; });
+    $("cards").value=JSON.stringify(C.cards||[],null,2);
+    $("tasks").value=JSON.stringify(C.tasks||[],null,2);
+    $("ranks").value=JSON.stringify(C.ranks||[],null,2);
+  }
+  function download(){
+    var out={
+      title:$("title").value, coin:$("coin").value, coinIcon:$("coinIcon").value,
+      character:$("character").value, bot:$("bot").value, channelUrl:$("channelUrl").value,
+      perTap:+$("perTap").value, energyMax:+$("energyMax").value, energyRegen:+$("energyRegen").value,
+      boostCooldown:+$("boostCooldown").value
+    };
+    try{ out.cards=JSON.parse($("cards").value); out.tasks=JSON.parse($("tasks").value); out.ranks=JSON.parse($("ranks").value); }
+    catch(e){ alert("Ошибка в JSON: "+e.message); return; }
+    var txt="// ===== НАСТРОЙКИ ИГРЫ (сгенерировано в admin.html) =====\nwindow.GAME_CONFIG = "+JSON.stringify(out,null,2)+";\n";
+    var blob=new Blob([txt],{type:"text/javascript"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="config.js"; a.click();
+    $("ok").style.display="block";
+  }
+</script>
+</body>
+</html>
