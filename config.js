@@ -1,10 +1,10 @@
 // ===== НАСТРОЙКИ ИГРЫ (можно менять через admin.html) =====
 window.GAME_CONFIG = {
-  title: "CR7 Coin",
+  title: "RONALDO WORLD",
   coin: "SIU",
   coinIcon: "🐐",
   character: "character.png",   // фото персонажа (положи рядом файл character.png)
-  bot: "@cr7tap_bot",
+  bot: "@RonaldoWorld_bot",
   channelUrl: "https://t.me/webdev_vitek",
   perTap: 1,            // монет за тап (базово)
   energyMax: 1000,      // макс энергии
