@@ -1,104 +1,182 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CR7 Coin — Админка</title>
-<script src="config.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RONALDO WORLD — Админка</title>
 <style>
-  :root{--bg:#0a0a12;--card:#1a1a2b;--bd:#262640;--gold:#f5b301;--gold2:#ffd24a;--txt:#fff;--muted:#9aa0b5}
-  *{box-sizing:border-box}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:24px}
-  .wrap{max-width:640px;margin:0 auto}
-  h1{font-size:22px;margin:0 0 4px}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
-  .note{background:#1a1505;border:1px solid #3a2e08;color:#f5d98a;font-size:12px;padding:10px 12px;border-radius:10px;margin-bottom:18px}
-  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px;font-weight:600}
-  input,textarea{width:100%;padding:11px 12px;border-radius:10px;background:var(--card);border:1px solid var(--bd);color:var(--txt);font-size:14px;font-family:inherit}
-  textarea{min-height:120px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .btn{width:100%;margin-top:20px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffd24a,#f5b301);color:#1a1300;font-weight:800;font-size:15px;cursor:pointer}
-  .gate{max-width:340px;margin:80px auto;text-align:center}
-  #app{display:none}
-  .ok{color:#34d399;font-size:13px;margin-top:10px;text-align:center;display:none}
+  :root{ --bg:#0f0f14; --soft:#1b1b25; --card:#23232f; --gold:#f5c542; --green:#4caf50; --red:#e5484d; --dim:#9a9aab; --text:#fff; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,sans-serif; padding:16px; }
+  h1{ font-size:22px; margin:0 0 14px; }
+  h2{ font-size:16px; margin:22px 0 10px; color:var(--gold); }
+  .card{ background:var(--soft); border-radius:14px; padding:14px; margin-bottom:12px; }
+  input{ background:var(--card); border:none; border-radius:10px; padding:11px 13px; color:#fff; font-size:15px; width:100%; }
+  button{ background:var(--gold); color:#15151c; border:none; border-radius:10px; padding:11px 16px; font-weight:700; font-size:14px; cursor:pointer; }
+  button.sec{ background:var(--card); color:#fff; }
+  button.red{ background:var(--red); color:#fff; }
+  button.green{ background:var(--green); color:#fff; }
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .hidden{ display:none; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:8px 6px; border-bottom:1px solid #2c2c3a; white-space:nowrap; }
+  th{ color:var(--dim); font-weight:600; }
+  .u-banned{ opacity:.5; }
+  .tag{ font-size:11px; padding:2px 7px; border-radius:99px; background:var(--red); color:#fff; }
+  .muted{ color:var(--dim); font-size:13px; }
+  .note{ background:#1a1505; border:1px solid #3a2e08; color:#f5d98a; font-size:12px; padding:10px 12px; border-radius:10px; margin-bottom:14px; }
+  .stat{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+  .stat b{ font-size:20px; }
+  .toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#000; padding:10px 16px; border-radius:10px; opacity:0; transition:.2s; }
+  .toast.show{ opacity:1; }
 </style>
 </head>
 <body>
-<div class="gate" id="gate">
-  <h1>🔒 Админка</h1>
-  <div class="sub">Введите пароль</div>
-  <input type="password" id="pw" placeholder="пароль">
-  <button class="btn" onclick="checkPw()">Войти</button>
+<h1>🐐 RONALDO WORLD — Админка</h1>
+<div class="note">⚠️ Админка работает только после деплоя Cloudflare-воркера. Впиши его адрес в переменную <b>WORKER</b> в этом файле (сейчас пусто) и пароль из секрета ADMIN_PASSWORD.</div>
+<div class="card" id="login">
+  <div class="muted" style="margin-bottom:8px">Введи пароль админки</div>
+  <div class="row">
+    <input id="pass" type="password" placeholder="Пароль" style="flex:1" />
+    <button onclick="enter()">Войти</button>
+  </div>
 </div>
-
-<div class="wrap" id="app">
-  <h1>⚙️ Настройки CR7 Coin</h1>
-  <div class="sub">Измени значения и скачай config.js — затем залей его в репозиторий (заменит старый).</div>
-  <div class="note">⚠️ Это статическая «админка»: чтобы изменения увидели все игроки, нужно скачать config.js и закоммитить его в репозиторий GitHub (сайт пересоберётся сам). Управлять балансом конкретных игроков отсюда нельзя — для этого нужен бэкенд.</div>
-
-  <div class="row">
-    <div><label>Название игры</label><input id="title"></div>
-    <div><label>Монета (название)</label><input id="coin"></div>
+<div id="panel" class="hidden">
+  <div class="card">
+    <div class="stat">
+      <div>Игроков: <b id="cntUsers">—</b></div>
+      <div>Забанено: <b id="cntBanned">—</b></div>
+    </div>
+    <div class="row">
+      <button onclick="loadUsers()">🔄 Обновить список</button>
+      <input id="search" placeholder="Поиск: имя / @ник / id" style="flex:1;min-width:140px" oninput="renderUsers()" />
+    </div>
   </div>
-  <div class="row">
-    <div><label>Иконка монеты (эмодзи)</label><input id="coinIcon"></div>
-    <div><label>Файл персонажа</label><input id="character"></div>
+  <div class="card">
+    <h2 style="margin-top:0">🎁 Розыгрыш</h2>
+    <div class="row">
+      <input id="rfCount" type="number" placeholder="Кол-во победителей" value="1" style="flex:1" />
+      <input id="rfPrize" type="number" placeholder="Приз (монет)" value="100000" style="flex:1" />
+      <button class="green" onclick="raffle()">Разыграть</button>
+    </div>
+    <div id="rfResult" class="muted" style="margin-top:8px"></div>
   </div>
-  <div class="row">
-    <div><label>Бот (@username)</label><input id="bot"></div>
-    <div><label>Ссылка на канал</label><input id="channelUrl"></div>
+  <div class="card">
+    <h2 style="margin-top:0">📣 Рассылка всем игрокам</h2>
+    <textarea id="bcText" placeholder="Текст сообщения, которое получат все игроки в боте..." rows="3"
+      style="width:100%;background:var(--card);border:none;border-radius:10px;padding:11px 13px;color:#fff;font-size:15px;resize:vertical;font-family:inherit"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="green" onclick="broadcast()">📤 Отправить всем</button>
+      <span id="bcResult" class="muted"></span>
+    </div>
   </div>
-  <div class="row">
-    <div><label>Монет за тап</label><input id="perTap" type="number"></div>
-    <div><label>Макс энергии</label><input id="energyMax" type="number"></div>
+  <h2>👥 Игроки</h2>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Игрок</th><th>ID</th><th>Баланс</th><th>Был</th><th>Действия</th></tr></thead>
+      <tbody id="usersBody"><tr><td colspan="5" class="muted">Нажми «Обновить список»</td></tr></tbody>
+    </table>
   </div>
-  <div class="row">
-    <div><label>Реген энергии (/сек)</label><input id="energyRegen" type="number"></div>
-    <div><label>Перезарядка буста (сек)</label><input id="boostCooldown" type="number"></div>
-  </div>
-
-  <label>Карточки (JSON)</label>
-  <textarea id="cards"></textarea>
-  <label>Задания (JSON)</label>
-  <textarea id="tasks"></textarea>
-  <label>Ранги (JSON)</label>
-  <textarea id="ranks"></textarea>
-
-  <button class="btn" onclick="download()">💾 Скачать config.js</button>
-  <div class="ok" id="ok">Готово! Залей этот config.js в репозиторий вместо старого.</div>
 </div>
-
+<div class="toast" id="toast"></div>
 <script>
-  var C = window.GAME_CONFIG || {};
-  function checkPw(){
-    // ВНИМАНИЕ: клиентский пароль, не настоящая защита. Поменяй значение ниже.
-    if(document.getElementById('pw').value === "cr7admin"){
-      document.getElementById('gate').style.display='none';
-      document.getElementById('app').style.display='block';
-      fill();
-    } else { alert("Неверный пароль"); }
-  }
-  var $=function(id){return document.getElementById(id)};
-  function fill(){
-    ["title","coin","coinIcon","character","bot","channelUrl","perTap","energyMax","energyRegen","boostCooldown"].forEach(function(k){ if($(k)) $(k).value = C[k]!=null?C[k]:""; });
-    $("cards").value=JSON.stringify(C.cards||[],null,2);
-    $("tasks").value=JSON.stringify(C.tasks||[],null,2);
-    $("ranks").value=JSON.stringify(C.ranks||[],null,2);
-  }
-  function download(){
-    var out={
-      title:$("title").value, coin:$("coin").value, coinIcon:$("coinIcon").value,
-      character:$("character").value, bot:$("bot").value, channelUrl:$("channelUrl").value,
-      perTap:+$("perTap").value, energyMax:+$("energyMax").value, energyRegen:+$("energyRegen").value,
-      boostCooldown:+$("boostCooldown").value
-    };
-    try{ out.cards=JSON.parse($("cards").value); out.tasks=JSON.parse($("tasks").value); out.ranks=JSON.parse($("ranks").value); }
-    catch(e){ alert("Ошибка в JSON: "+e.message); return; }
-    var txt="// ===== НАСТРОЙКИ ИГРЫ (сгенерировано в admin.html) =====\nwindow.GAME_CONFIG = "+JSON.stringify(out,null,2)+";\n";
-    var blob=new Blob([txt],{type:"text/javascript"});
-    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="config.js"; a.click();
-    $("ok").style.display="block";
-  }
+const WORKER = ''; // ВПИШИ адрес своего Cloudflare-воркера, напр. https://ronaldo-bot.xxx.workers.dev
+let PASS = '';
+let USERS = [];
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+async function api(path, extra){
+  if(!WORKER){ toast('Сначала впиши адрес воркера (WORKER)'); return {ok:false}; }
+  const r = await fetch(WORKER+path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pass:PASS, ...extra }) });
+  return r.json();
+}
+async function enter(){
+  PASS = document.getElementById('pass').value.trim();
+  const j = await api('/admin/users', {});
+  if(!j.ok){ toast('Неверный пароль или воркер не настроен'); return; }
+  sessionStorage.setItem('rw_admin', PASS);
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('panel').classList.remove('hidden');
+  USERS = j.users || [];
+  renderUsers();
+}
+async function loadUsers(){
+  const j = await api('/admin/users', {});
+  if(!j.ok){ toast('Ошибка'); return; }
+  USERS = j.users || [];
+  renderUsers();
+  toast('Обновлено');
+}
+function fmt(n){ n=Math.floor(n||0); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(2)+'K'; return ''+n; }
+function ago(ts){ if(!ts) return '—'; const s=(Date.now()-ts)/1000; if(s<60)return 'только что'; if(s<3600)return Math.floor(s/60)+' мин'; if(s<86400)return Math.floor(s/3600)+' ч'; return Math.floor(s/86400)+' дн'; }
+function renderUsers(){
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const list = USERS.filter(u => !q || (u.name||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q) || String(u.id).includes(q));
+  document.getElementById('cntUsers').textContent = USERS.length;
+  document.getElementById('cntBanned').textContent = USERS.filter(u=>u.banned).length;
+  const body = document.getElementById('usersBody');
+  if(!list.length){ body.innerHTML = '<tr><td colspan="5" class="muted">Пусто</td></tr>'; return; }
+  body.innerHTML = list.map(u => {
+    const profile = u.username ? ('https://t.me/'+encodeURIComponent(u.username)) : ('tg://user?id='+u.id);
+    return `
+    <tr class="${u.banned?'u-banned':''}">
+      <td>
+        <a href="${profile}" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none">
+          ${esc(u.name||'—')} ${u.username?('@'+esc(u.username)):''} ↗
+        </a>
+        ${u.banned?'<span class=tag>BAN</span>':''}
+      </td>
+      <td>${u.id}</td>
+      <td>${fmt(u.balance)}</td>
+      <td>${ago(u.lastSeen)}</td>
+      <td class="row">
+        <button class="sec" onclick="grant('${u.id}')">+ Монеты</button>
+        ${u.banned
+          ? `<button class="green" onclick="ban('${u.id}',false)">Разбан</button>`
+          : `<button class="red" onclick="ban('${u.id}',true)">Бан</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function grant(id){
+  const a = prompt('Сколько монет начислить игроку '+id+'?');
+  if(a===null) return;
+  const amount = parseInt(a,10);
+  if(!amount){ toast('Введи число'); return; }
+  const j = await api('/admin/grant', { userId:id, amount });
+  toast(j.ok ? `Начислено ${amount} (зачислится при заходе)` : 'Ошибка');
+}
+async function ban(id, val){
+  if(val && !confirm('Забанить игрока '+id+'?')) return;
+  const j = await api('/admin/ban', { userId:id, banned:val });
+  if(j.ok){ const u=USERS.find(x=>String(x.id)===String(id)); if(u){u.banned=val; if(val)u.balance=0;} renderUsers(); toast(val?'Забанен, счёт обнулён':'Разбанен'); }
+  else toast('Ошибка');
+}
+async function raffle(){
+  const count = parseInt(document.getElementById('rfCount').value,10)||1;
+  const prize = parseInt(document.getElementById('rfPrize').value,10)||0;
+  if(!confirm(`Разыграть ${prize} монет среди ${count} победителей?`)) return;
+  const j = await api('/admin/raffle', { count, prize });
+  if(!j.ok){ toast('Ошибка'); return; }
+  const w = j.winners||[];
+  document.getElementById('rfResult').innerHTML = w.length
+    ? '🏆 Победители: ' + w.map(x=>esc(x.name||x.id)+(x.username?(' @'+esc(x.username)):'')).join(', ')
+    : 'Нет подходящих игроков';
+  toast('Розыгрыш проведён');
+  loadUsers();
+}
+async function broadcast(){
+  const text = document.getElementById('bcText').value.trim();
+  if(!text){ toast('Введи текст'); return; }
+  if(!confirm('Отправить это сообщение ВСЕМ игрокам?')) return;
+  document.getElementById('bcResult').textContent = 'Отправляю…';
+  const j = await api('/admin/broadcast', { text });
+  if(!j.ok){ document.getElementById('bcResult').textContent='Ошибка'; return; }
+  document.getElementById('bcResult').textContent = `Отправлено: ${j.sent} из ${j.total}` + (j.failed?`, не дошло: ${j.failed}`:'');
+  toast('Рассылка отправлена');
+}
+const saved = sessionStorage.getItem('rw_admin');
+if(saved && WORKER){ document.getElementById('pass').value = saved; enter(); }
 </script>
 </body>
 </html>
