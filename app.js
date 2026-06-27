@@ -30,10 +30,9 @@ const CARDS = [
   { id: 'token',  name: 'Листинг $CR7',   emoji: '💠', baseProfit: 30000, baseCost: 1000000 },
 ];
 // ---- Канал (обязательная подписка для игры) ----
-const CHANNEL_URL = 'https://t.me/vitek_webdev'; // ЗАМЕНИ на свой канал RONALDO WORLD
+const CHANNEL_URL = 'https://t.me/TICKOW';
 // Адрес воркера Cloudflare для настоящей проверки подписки/рефералов/админки.
-// Пусто = работает без бэкенда (тапалка), без проверки подписки и серверной админки.
-const WORKER_URL = '';
+const WORKER_URL = 'https://ronaldo-bot.catness-edcaw.workers.dev';
 // Спрашиваем у сервера, реально ли человек подписан на канал.
 async function verifySubscription() {
   if (!WORKER_URL || !tg?.initData) return null;
@@ -435,7 +434,7 @@ function renderEarn() {
     <div class="list-item">
       <span class="li-emoji">📢</span>
       <div class="li-text">
-        <div class="li-title">Канал RONALDO WORLD</div>
+        <div class="li-title">Подписаться на канал Ronaldo</div>
         <div class="li-sub">Ты подписан ✓</div>
       </div>
       <button class="li-action done" disabled>✓ Готово</button>
