@@ -568,7 +568,22 @@ function bpThresholds(){
 }
 var BP = bpThresholds();
 function bpLevel(){ var lv=0; for(var i=0;i<BP.length;i++){ if((state.xp||0)>=BP[i]) lv=i+1; } return lv; }
-function bpReward(l){ return l>=50 ? 200000 : l*2000; }
+function bpReward(l){
+  if(l>=50) return 200000;
+  if(l>=41) return 75000;
+  if(l>=31) return 30000;
+  if(l>=21) return 12000;
+  if(l>=11) return 5000;
+  return 2000;
+}
+function bpRewardLabel(l){
+  if(l>=50) return '🏆 CR7 World Cup';
+  if(l>=41) return '🎁 Легенда +'+fmt(bpReward(l));
+  if(l>=31) return '🔮 Эпик +'+fmt(bpReward(l));
+  if(l>=21) return '💎 Редкая +'+fmt(bpReward(l));
+  if(l>=11) return '⚽ +'+fmt(bpReward(l));
+  return '🪙 +'+fmt(bpReward(l));
+}
 function renderBP(){
   var xp=state.xp||0, lv=bpLevel();
   var prevNeed = lv>0 ? BP[lv-1] : 0;
@@ -587,7 +602,7 @@ function renderBP(){
     var fin = l===50;
     html += '<div class="bp-lvl '+(reached?'on':'')+(fin?' final':'')+'">'+
       '<div class="bp-n">'+(fin?'🏆':l)+'</div>'+
-      '<div class="bp-rw">'+(fin?'CR7 World Cup':('+'+fmt(bpReward(l))))+'</div>'+
+      '<div class="bp-rw">'+bpRewardLabel(l)+'</div>'+
       '<button data-bp="'+l+'" '+(reached&&!claimed?'':'disabled')+' class="'+(claimed?'done':'')+'">'+(claimed?'✓':'Забрать')+'</button>'+
       '</div>';
   }
